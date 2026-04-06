@@ -1,4 +1,37 @@
 <?php
+// OTP functionality
+function generateOTP() {
+    return str_pad(random_int(0, 999999), 6, '0', STR_PAD_LEFT);
+}
+
+$show_otp = false;
+$otp = '';
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $username = trim($_POST['username'] ?? '');
+    $password = trim($_POST['password'] ?? '');
+    $otp = trim($_POST['otp'] ?? '');
+
+    if ($username === 'admin' && $password === 'password123') {
+        if (!$show_otp) {
+            $otp = generateOTP();
+            $_SESSION['otp'] = $otp;
+            $show_otp = true;
+            $errors[] = "OTP sent: $otp"; // for demo, remove in production
+        } elseif ($otp === $_SESSION['otp']) {
+            $_SESSION['user'] = $username;
+            unset($_SESSION['otp']);
+            header('Location: dashboard.php');
+            exit;
+        } else {
+            $errors[] = 'Invalid OTP.';
+        }
+    } else {
+        $errors[] = 'Invalid username or password.';
+    }
+}
+?>
+<?php
 session_start();
 
 $errors = [];
