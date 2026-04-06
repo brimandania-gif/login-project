@@ -1,62 +1,40 @@
 <?php
-// OTP functionality
-function generateOTP() {
-    return str_pad(random_int(0, 999999), 6, '0', STR_PAD_LEFT);
+session_start();
+
+$errors = [];
+
+if (isset($_GET['logout'])) {
+    session_destroy();
+    header('Location: login.php');
+    exit;
 }
 
-$show_otp = false;
-$otp = '';
-
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $username = trim($_POST['username'] ?? '');
-    $password = trim($_POST['password'] ?? '');
-    $otp = trim($_POST['otp'] ?? '');
+    if (isset($_SESSION['otp_pending']) && $_SESSION['otp_pending'] === true) {
+        $otp = trim($_POST['otp'] ?? '');
 
-    if ($username === 'admin' && $password === 'password123') {
-        if (!$show_otp) {
-            $otp = generateOTP();
-            $_SESSION['otp'] = $otp;
-            $show_otp = true;
-            $errors[] = "OTP sent: $otp"; // for demo, remove in production
-        } elseif ($otp === $_SESSION['otp']) {
-            $_SESSION['user'] = $username;
-            unset($_SESSION['otp']);
+        if ($otp === '12345') {
+            $_SESSION['user'] = $_SESSION['otp_user'];
+            unset($_SESSION['otp_pending'], $_SESSION['otp_user']);
             header('Location: dashboard.php');
             exit;
         } else {
             $errors[] = 'Invalid OTP.';
         }
     } else {
-        $errors[] = 'Invalid username or password.';
+        $username = trim($_POST['username'] ?? '');
+        $password = trim($_POST['password'] ?? '');
+
+        $validUser = 'admin';
+        $validPass = 'password123';
+
+        if ($username === $validUser && $password === $validPass) {
+            $_SESSION['otp_pending'] = true;
+            $_SESSION['otp_user'] = $username;
+        } else {
+            $errors[] = 'Invalid username or password.';
+        }
     }
-}
-?>
-<?php
-session_start();
-
-$errors = [];
-
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $username = trim($_POST['username'] ?? '');
-    $password = trim($_POST['password'] ?? '');
-
-    // Replace these with your real user lookup
-    $validUser = 'admin';
-    $validPass = 'password123';
-
-    if ($username === $validUser && $password === $validPass) {
-        $_SESSION['user'] = $username;
-        header('Location: dashboard.php');
-        exit;
-    } else {
-        $errors[] = 'Invalid username or password.';
-    }
-}
-
-if (isset($_GET['logout'])) {
-    session_destroy();
-    header('Location: login.php');
-    exit;
 }
 ?>
 <!DOCTYPE html>
@@ -79,11 +57,20 @@ if (isset($_GET['logout'])) {
         <?php if ($errors): ?>
             <div class="error"><?= htmlspecialchars($errors[0]) ?></div>
         <?php endif; ?>
-        <form method="post" action="login.php">
-            <input type="text" name="username" placeholder="Username" required autofocus>
-            <input type="password" name="password" placeholder="Password" required>
-            <button type="submit">Sign In</button>
-        </form>
+
+        <?php if (isset($_SESSION['otp_pending']) && $_SESSION['otp_pending'] === true): ?>
+            <form method="post" action="login.php">
+                <p>Enter OTP for <?= htmlspecialchars($_SESSION['otp_user']) ?>:</p>
+                <input type="text" name="otp" placeholder="OTP" required autofocus>
+                <button type="submit">Verify OTP</button>
+            </form>
+        <?php else: ?>
+            <form method="post" action="login.php">
+                <input type="text" name="username" placeholder="Username" required autofocus>
+                <input type="password" name="password" placeholder="Password" required>
+                <button type="submit">Sign In</button>
+            </form>
+        <?php endif; ?>
     </div>
 </body>
 </html>
