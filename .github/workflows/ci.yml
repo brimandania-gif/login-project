@@ -13,7 +13,7 @@ jobs:
 
       - name: Check login file
         run: |
-          if [ ! -f "login.php" ]; then
-            echo "login.php not found!"
+          if [ ! -f "dashboard.php" ]; then
+            echo "dashboard.php not found!"
             exit 1
           fi
