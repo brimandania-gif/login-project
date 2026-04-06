@@ -1,0 +1,19 @@
+name: CI Pipeline
+
+on:
+  push:
+    branches: ["main"]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check login file
+        run: |
+          if [ ! -f "login.php" ]; then
+            echo "login.php not found!"
+            exit 1
+          fi
